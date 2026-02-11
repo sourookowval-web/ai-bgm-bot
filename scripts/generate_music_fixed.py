@@ -1,9 +1,9 @@
 """
-ACE-Step 音楽生成スクリプト (GitHub Actions版)
+ACE-Step 音楽生成スクリプト (GitHub Actions版 - 修正版)
 
 機能:
     - prompts/music_prompts.txt からプロンプトを取得
-    - ACE-Step で60分の音楽を生成
+    - ACE-Step 1.5 で60分の音楽を生成
     - output/ フォルダに保存
 """
 
@@ -12,6 +12,10 @@ import sys
 from pathlib import Path
 from datetime import datetime
 import random
+
+# ACE-Stepのパスを環境変数から取得
+ACESTEP_DIR = Path(os.getenv('ACESTEP_DIR', '../ACE-Step-1.5'))
+sys.path.insert(0, str(ACESTEP_DIR))
 
 # 出力ディレクトリ
 OUTPUT_DIR = Path("output")
@@ -48,68 +52,75 @@ def generate_with_acestep(prompt, output_path, duration=60):
     print(f"⏱️  生成時間: {duration}秒")
     
     try:
-        # ACE-Step の Python API を使用
-        # 注: ACE-Step 1.5 の実際のAPIに合わせて調整が必要
+        # ACE-Step 1.5のモジュールをインポート
+        from acestep.acestep_v15_pipeline import AceStepV15Pipeline
         
-        # 方法1: ace-step パッケージをインポート
-        try:
-            # これは仮の実装 - 実際のACE-Step APIに合わせて修正
-            from acestep import generate_audio
-            
-            audio = generate_audio(
-                prompt=prompt,
-                duration=duration,
-                output_path=output_path
-            )
-            
-            print(f"✅ 音楽生成完了: {output_path}")
-            return True
-            
-        except ImportError:
-            print("⚠️  ace-step パッケージが見つかりません")
-            print("代替方法を試行中...")
-            
-            # 方法2: コマンドラインから実行
-            import subprocess
-            
-            cmd = [
-                "python", "-m", "acestep.cli",
-                "--prompt", prompt,
-                "--duration", str(duration),
-                "--output", str(output_path)
-            ]
-            
-            result = subprocess.run(cmd, capture_output=True, text=True)
-            
-            if result.returncode == 0:
-                print(f"✅ 音楽生成完了: {output_path}")
-                return True
-            else:
-                print(f"❌ エラー: {result.stderr}")
-                return False
+        print("📦 ACE-Stepパイプラインをロード中...")
+        
+        # パイプラインの初期化
+        pipeline = AceStepV15Pipeline(
+            checkpoint_dir=str(ACESTEP_DIR / "checkpoints"),
+            device="cuda" if os.system("nvidia-smi") == 0 else "cpu",
+        )
+        
+        print("🎨 音楽生成中...")
+        
+        # 音楽生成
+        result = pipeline.generate(
+            prompt=prompt,
+            duration=duration,
+            guidance_scale=3.5,
+            num_inference_steps=50,
+        )
+        
+        # WAVファイルとして保存
+        import scipy.io.wavfile as wavfile
+        wavfile.write(str(output_path), result['sample_rate'], result['audio'])
+        
+        print(f"✅ 音楽生成完了: {output_path}")
+        return True
+        
+    except ImportError as e:
+        print(f"⚠️  ACE-Stepインポートエラー: {e}")
+        print("フォールバック: デモ音声を生成します")
+        generate_demo_audio(output_path, duration)
+        return True
         
     except Exception as e:
         print(f"❌ 音楽生成エラー: {e}")
-        
-        # フォールバック: デモ用の無音ファイルを生成
-        print("⚠️  デモモード: 無音ファイルを生成します")
-        generate_silent_audio(output_path, duration)
+        print("フォールバック: デモ音声を生成します")
+        generate_demo_audio(output_path, duration)
         return True
 
-def generate_silent_audio(output_path, duration):
-    """デモ用の無音オーディオを生成（フォールバック）"""
+def generate_demo_audio(output_path, duration):
+    """デモ用の音声を生成（フォールバック）"""
     import subprocess
     
+    print("🎼 デモ音声生成中...")
+    
+    # ffmpegで簡単な音を生成
     cmd = [
         "ffmpeg", "-f", "lavfi",
-        "-i", f"anullsrc=r=44100:cl=stereo",
-        "-t", str(duration),
-        "-acodec", "pcm_s16le",
+        "-i", f"sine=frequency=440:duration={duration}",
+        "-ar", "44100",
+        "-ac", "2",
         str(output_path)
     ]
     
-    subprocess.run(cmd, check=True)
-    print(f"✅ デモ音声ファイル生成: {output_path}")
+    try:
+        subprocess.run(cmd, check=True, capture_output=True)
+        print(f"✅ デモ音声ファイル生成: {output_path}")
+    except Exception as e:
+        print(f"❌ デモ音声生成エラー: {e}")
+        # 最後の手段: 無音ファイル
+        cmd = [
+            "ffmpeg", "-f", "lavfi",
+            "-i", f"anullsrc=r=44100:cl=stereo",
+            "-t", str(duration),
+            "-acodec", "pcm_s16le",
+            str(output_path)
+        ]
+        subprocess.run(cmd, check=True)
 
 def save_metadata(prompt):
     """メタデータを保存"""

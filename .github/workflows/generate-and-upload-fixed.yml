@@ -20,34 +20,53 @@ jobs:
       - name: 🐍 Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
-          cache: 'pip'
+          python-version: '3.11'
       
-      # ===== 3. 依存関係インストール =====
-      - name: 📦 Install dependencies
+      # ===== 3. uvインストール =====
+      - name: 📦 Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      
+      # ===== 4. ACE-Stepクローン & インストール =====
+      - name: 🎵 Clone and install ACE-Step
+        run: |
+          git clone https://github.com/ACE-Step/ACE-Step-1.5.git
+          cd ACE-Step-1.5
+          uv sync
+          # 環境をアクティベート（uvの仮想環境を使用）
+          echo "ACESTEP_DIR=$(pwd)" >> $GITHUB_ENV
+        timeout-minutes: 15
+      
+      # ===== 5. プロジェクト依存関係インストール =====
+      - name: 📦 Install project dependencies
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
       
-      # ===== 4. ACE-Step音楽生成 =====
+      # ===== 6. ACE-Step音楽生成 =====
       - name: 🎵 Generate music with ACE-Step
         run: |
-          python scripts/generate_music.py
+          # ACE-Stepの仮想環境を使用
+          cd ACE-Step-1.5
+          uv run python ../scripts/generate_music.py
         timeout-minutes: 30
       
-      # ===== 5. Stable Diffusion背景生成 =====
+      # ===== 7. Stable Diffusion背景生成 =====
       - name: 🖼️ Generate background image
         run: |
           python scripts/generate_background.py
         timeout-minutes: 10
       
-      # ===== 6. ffmpegで動画化 =====
+      # ===== 8. ffmpegで動画化 =====
       - name: 🎬 Create video with ffmpeg
         run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
           python scripts/create_video.py
         timeout-minutes: 15
       
-      # ===== 7. YouTube投稿 =====
+      # ===== 9. YouTube投稿 =====
       - name: 📤 Upload to YouTube
         env:
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
@@ -57,7 +76,7 @@ jobs:
           python scripts/upload_youtube.py
         timeout-minutes: 20
       
-      # ===== 8. 生成物を保存（デバッグ用） =====
+      # ===== 10. 生成物を保存（デバッグ用） =====
       - name: 💾 Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -70,7 +89,7 @@ jobs:
             output/*.txt
           retention-days: 7
       
-      # ===== 9. 通知（オプション） =====
+      # ===== 11. 通知 =====
       - name: 📢 Notify completion
         if: success()
         run: |
