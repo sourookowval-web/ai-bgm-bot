@@ -1,7 +1,20 @@
-torch
-torchaudio
-audiocraft
-requests
-google-api-python-client
-google-auth
-Pillow
+# AI BGM BOT - Python依存関係
+
+# 音楽生成
+# ace-step>=1.5.0  # 注: 実際のパッケージ名に要確認
+
+# 画像生成
+diffusers>=0.25.0
+transformers>=4.36.0
+accelerate>=0.25.0
+torch>=2.1.0
+Pillow>=10.0.0
+
+# YouTube投稿
+google-api-python-client>=2.100.0
+google-auth>=2.23.0
+google-auth-oauthlib>=1.1.0
+google-auth-httplib2>=0.1.1
+
+# ユーティリティ
+requests>=2.31.0

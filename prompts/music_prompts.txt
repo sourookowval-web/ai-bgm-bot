@@ -1,0 +1,24 @@
+# AI BGM BOT - 音楽プロンプトリスト
+# 各行が1つのプロンプトです
+# 週3回ランダムに選ばれます
+
+lofi chill rainy night
+deep focus ambient study
+cozy jazz cafe rain
+soft piano winter night
+cyberpunk rain city
+calm morning acoustic guitar
+relaxing beach waves ocean
+peaceful forest ambience birds
+nighttime city jazz smooth
+calm meditation zen garden
+dreamy synthwave retro
+warm fireplace crackling
+gentle spring breeze nature
+late night lofi beats
+smooth bossa nova cafe
+mellow sunset acoustic
+tranquil mountain stream
+soft electronic ambient
+cozy reading nook rain
+peaceful garden birds chirping

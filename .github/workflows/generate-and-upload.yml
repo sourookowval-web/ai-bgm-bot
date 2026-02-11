@@ -1,0 +1,78 @@
+name: 🎵 Auto BGM Generator & YouTube Uploader
+
+on:
+  schedule:
+    # 毎週月・水・金の 9:00 UTC (日本時間 18:00)
+    - cron: '0 9 * * 1,3,5'
+  
+  workflow_dispatch:  # 手動実行も可能
+
+jobs:
+  generate-and-upload:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # ===== 1. リポジトリチェックアウト =====
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+      
+      # ===== 2. Python環境セットアップ =====
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      
+      # ===== 3. 依存関係インストール =====
+      - name: 📦 Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      # ===== 4. ACE-Step音楽生成 =====
+      - name: 🎵 Generate music with ACE-Step
+        run: |
+          python scripts/generate_music.py
+        timeout-minutes: 30
+      
+      # ===== 5. Stable Diffusion背景生成 =====
+      - name: 🖼️ Generate background image
+        run: |
+          python scripts/generate_background.py
+        timeout-minutes: 10
+      
+      # ===== 6. ffmpegで動画化 =====
+      - name: 🎬 Create video with ffmpeg
+        run: |
+          python scripts/create_video.py
+        timeout-minutes: 15
+      
+      # ===== 7. YouTube投稿 =====
+      - name: 📤 Upload to YouTube
+        env:
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+        run: |
+          python scripts/upload_youtube.py
+        timeout-minutes: 20
+      
+      # ===== 8. 生成物を保存（デバッグ用） =====
+      - name: 💾 Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bgm-video-${{ github.run_number }}
+          path: |
+            output/*.wav
+            output/*.mp4
+            output/*.jpg
+            output/*.txt
+          retention-days: 7
+      
+      # ===== 9. 通知（オプション） =====
+      - name: 📢 Notify completion
+        if: success()
+        run: |
+          echo "✅ BGM動画の生成・投稿が完了しました！"
+          echo "📺 YouTubeをチェックしてください"
