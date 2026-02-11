@@ -1,15 +1,15 @@
-from mood import get_prompt
-from suno import generate_music
+from mood import get_mood
+from musicgen import generate_music
 from bg import generate_bg
 from video import make_video
-from thumbnail import make_thumb
+from thumbnail import make_thumbnail
 from youtube import upload
 
-prompt = get_prompt()
-title = prompt.title()
+mood = get_mood()
+title = f"{mood} | AI BGM"
 
-generate_music(prompt)
-generate_bg("cozy room, rain, anime style")
+generate_music(mood)
+generate_bg("anime cozy room, rain, night, window, soft lighting")
 make_video()
-make_thumb(title)
+make_thumbnail(title)
 upload(title)

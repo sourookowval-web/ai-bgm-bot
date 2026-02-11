@@ -1,13 +1,12 @@
-import datetime
+import random, datetime
 
-def get_prompt():
-    now = datetime.datetime.utcnow()
-    hour = now.hour
-    month = now.month
-    weekday = now.weekday()
-
-    time = "night" if hour >= 18 else "day"
-    season = "winter" if month in [12,1,2] else "summer"
-    style = {0:"lofi",2:"ambient",4:"jazz"}.get(weekday,"lofi")
-
-    return f"{style}, {time}, {season}, instrumental, no vocals"
+def get_mood():
+    moods = [
+        "lofi chill rainy night",
+        "deep focus ambient",
+        "cozy jazz cafe rain",
+        "cyberpunk night rain",
+        "soft piano winter night"
+    ]
+    today = datetime.datetime.utcnow().weekday()
+    return moods[today % len(moods)]
